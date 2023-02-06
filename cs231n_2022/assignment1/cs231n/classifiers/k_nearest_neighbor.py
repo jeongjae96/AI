@@ -101,7 +101,7 @@ class KNearestNeighbor(object):
             #######################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-            pass
+            dists[i] = np.sqrt(np.sum(np.square(self.X_train - X[i]), axis=1))
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         return dists
@@ -176,7 +176,7 @@ class KNearestNeighbor(object):
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-            # bincount from classes 0-9 and return argmax
+            # bincount (from classes 0-9) and return argmax
             # numpy.bincount: https://numpy.org/doc/stable/reference/generated/numpy.bincount.html
             y_pred[i] = np.bincount(closest_y).argmax()
 
