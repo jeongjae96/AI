@@ -290,7 +290,15 @@ def batchnorm_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    x, sample_mean, sample_var, eps, normalized_x, gamma = cache
+    N, _ = dout.shape
+
+    dnormalized_x = dout * gamma
+    dsample_var = np.sum(dnormalized_x * (x - sample_mean) * -0.5 * np.power(sample_var + eps, -1.5), axis=0)
+    dsample_mean = np.sum(dnormalized_x / (-1 * np.sqrt(sample_var + eps)), axis=0) + dsample_var * np.mean(-2 * (x - sample_mean), axis=0)
+    dx = dnormalized_x / np.sqrt(sample_var + eps) + dsample_var * 2 * ( x - sample_mean) / N + dsample_mean / N
+    dgamma = np.sum(dout * normalized_x, axis=0)
+    dbeta = np.sum(dout, axis=0)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
