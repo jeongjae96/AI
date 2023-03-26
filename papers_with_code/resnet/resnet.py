@@ -1,7 +1,7 @@
 '''
 Reference
-paper link: https://arxiv.org/abs/1512.03385
-code link: https://pytorch.org/vision/main/_modules/torchvision/models/resnet.html
+- paper link: https://arxiv.org/abs/1512.03385
+- code link: https://pytorch.org/vision/main/_modules/torchvision/models/resnet.html
 '''
 
 import torch
@@ -73,6 +73,54 @@ class BasicBlock(nn.Module):
         # shortcut/skip connection
         if self.downsample is not None:
             identity = self.downsample(x)
+        out += identity
+        out = self.relu(out)
+
+        return out
+    
+class Bottleneck(nn.Module):
+    EXPANSION = 4
+
+    def __init__(
+        self,
+        in_channels,
+        out_channels,
+        stride=1,
+        downsample=None,
+        norm_layer=nn.BatchNorm2d   
+    ):
+        super().__init__()
+
+        self.conv1 = conv1x1(in_channels, out_channels)
+        self.bn1 = norm_layer(out_channels)
+
+        self.conv2 = conv3x3(out_channels, out_channels, stride)
+        self.bn2 = norm_layer(out_channels)
+
+        self.conv3 = conv1x1(out_channels, out_channels * self.EXPANSION)
+        self.bn3 = norm_layer(out_channels * self.EXPANSION)
+
+        self.relu = nn.ReLU(inplace=True)
+
+        self.downsample = downsample
+
+    def forward(self, x):
+        identity = x
+
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
+
+        out = self.conv2(out)
+        out = self.bn2(out)
+        out = self.relu(out)
+
+        out = self.conv3(out)
+        out = self.bn3(out)
+
+        if self.downsample is not None:
+            identity = self.downsample(x)
+
         out += identity
         out = self.relu(out)
 
