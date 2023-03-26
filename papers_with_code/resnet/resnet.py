@@ -23,3 +23,16 @@ def conv3x3(
         bias=False
     )
 
+def conv1x1(
+    in_channels,
+    out_channels,
+    stride=1
+):
+    """1x1 convolution"""
+    return nn.Conv2d(
+        in_channels, 
+        out_channels, 
+        kernel_size=1, 
+        stride=stride, 
+        bias=False
+    )
