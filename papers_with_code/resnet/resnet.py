@@ -53,7 +53,7 @@ class BasicBlock(nn.Module):
         self.conv1 = conv3x3(in_channels, out_channels, stride)
         self.bn1 = norm_layer(out_channels)
 
-        self.conv2 = conv3x3(out_channels, out_channels, stride)
+        self.conv2 = conv3x3(out_channels, out_channels)
         self.bn2 = norm_layer(out_channels)
 
         self.relu = nn.ReLU(inplace=True)
@@ -138,28 +138,28 @@ class ResNet(nn.Module):
 
         self._norm_layer = norm_layer
         self.relu = nn.ReLU(inplace=True)
-        self.out_channels = 64
+        self.in_channels = 64
 
         self.conv1 = nn.Conv2d(
             3, 
-            self.out_channels, 
+            self.in_channels, 
             kernel_size=7, 
             stride=2, 
             padding=3, 
             bias=False
         )
-        self.bn1 = norm_layer(self.out_channels)
+        self.bn1 = norm_layer(self.in_channels)
 
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
-        self.layer1 = self._make_layer(block, self.out_channels, layers[0])
-        self.layer2 = self._make_layer(block, self.out_channels * 2, layers[1], stride=2)
-        self.layer3 = self._make_layer(block, self.out_channels * 4, layers[2], stride=2)
-        self.layer4 = self._make_layer(block, self.out_channels * 8, layers[3], stride=2)
+        self.layer1 = self._make_layer(block, 64, layers[0])
+        self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
+        self.layer3 = self._make_layer(block, 258, layers[2], stride=2)
+        self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
 
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
 
-        self.fc = nn.Linear(self.out_channels * 8 * block.EXPANSION, num_classes)
+        self.fc = nn.Linear(512 * block.EXPANSION, num_classes)
 
     def _make_layer(
         self,
@@ -171,9 +171,9 @@ class ResNet(nn.Module):
         norm_layer = self._norm_layer
         projection = None
 
-        if stride != 1 or self.out_channels != channels * block.EXPANSION:
+        if stride != 1 or self.in_channels != channels * block.EXPANSION:
             projection = nn.Sequential(
-                conv1x1(self.out_channels, channels * block.EXPANSION, stride),
+                conv1x1(self.in_channels, channels * block.EXPANSION, stride),
                 norm_layer(channels * block.EXPANSION)
             )
 
@@ -181,9 +181,10 @@ class ResNet(nn.Module):
         
         layers.append(
             block(
-                self.out_channels,
+                self.in_channels,
                 channels,
                 stride,
+                projection,
                 norm_layer
             )
         )
