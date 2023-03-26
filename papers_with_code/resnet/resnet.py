@@ -91,6 +91,10 @@ class Bottleneck(nn.Module):
     ):
         super().__init__()
 
+        '''
+        Original implementation places the stride at the first 1x1 convolution(self.conv1).
+        Placing the stride for downsampling at 3x3 convolution(self.conv2) improves accuracy.
+        '''
         self.conv1 = conv1x1(in_channels, out_channels)
         self.bn1 = norm_layer(out_channels)
 
