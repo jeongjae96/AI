@@ -290,7 +290,6 @@ def batchnorm_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    # ref: https://kevinzakka.github.io/2016/09/14/batch_normalization/
     x, sample_mean, sample_var, eps, normalized_x, gamma = cache
     N, _ = dout.shape
 
@@ -333,6 +332,7 @@ def batchnorm_backward_alt(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+    # ref: https://kevinzakka.github.io/2016/09/14/batch_normalization/
     x, sample_mean, sample_var, eps, normalized_x, gamma = cache
     N, _ = dout.shape
 
