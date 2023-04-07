@@ -15,6 +15,7 @@ import torch.utils.data
 import torch.optim as optim
 import torch.nn as nn
 import torch.nn.functional as F
+import torchvision
 from torchvision import datasets, transforms
 from torchvision.utils import save_image
 
@@ -48,6 +49,12 @@ parser.add_argument(
     type=int,
     default=2023,
     help='random seed (default: 2023)'
+)
+parser.add_argument(
+    '--data',
+    type=str,
+    default='MNIST',
+    help='dataset option: MNIST, CIFAR-10 (default: MNIST)'
 )
 args = parser.parse_args()
 
@@ -110,7 +117,7 @@ class VAE(nn.Module):
 
 # reconstruction loss + KL divergence regularizatioin        
 def loss_function(reconst_x, x, mu, log_var):
-    BCE = F.binary_cross_entropy(reconst_x, x.view(-1, x.size(-1) ** 2), reduction='sum')
+    BCE = F.binary_cross_entropy(reconst_x, x.view(reconst_x.size()), reduction='sum')
     # Appendix B from VAE paper
     KLD = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
     loss = BCE + KLD
@@ -140,18 +147,21 @@ def test(epoch, model, test_loader):
 
     with torch.no_grad():
         for batch_idx, (data, _) in enumerate(tqdm(test_loader)):
+            if batch_idx == 0:
+                _, input_channel, input_size, _ = data.size()
+
             data = data.to(device)
             reconst_batch, mu, log_var = model(data)
             loss = loss_function(reconst_batch, data, mu, log_var)
             test_loss += loss.item()
 
-            if batch_idx == 0 and epoch % 1 == 0:
+            if batch_idx == 0 and epoch % 10 == 0:
                 batch_size = data.size(0)
                 n = min(batch_size, 8)
-                comparison = torch.cat([data[:n], reconst_batch.view(batch_size, 1, 28, 28)[:n]])
+                comparison = torch.cat([data[:n], reconst_batch.view(batch_size, input_channel, input_size, input_size)[:n]])
                 save_image(
                     comparison.cpu(),
-                    f'./results/reconstruction_{epoch}.png',
+                    f'./results/{args.data}/reconstruction_{epoch}.png',
                     nrow=n
                 )
 
@@ -171,22 +181,49 @@ if __name__ == '__main__':
     print(device)
 
     ### set directory ###
-    if not os.path.isdir('./results/'):
-        os.mkdir('./results/')
+    results_dir = f'./results/{args.data}/'
+
+    if not os.path.isdir(results_dir):
+        os.makedirs(results_dir)
 
     ### dataloader ###
-    train_dataset = datasets.MNIST(
-        '../data', 
-        train=True, 
-        download=True, 
-        transform=transforms.ToTensor()
-    )
+    transform_train = transforms.Compose([
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+    ])
 
-    test_dataset = datasets.MNIST(
-        '../data',
-        train=False,
-        transform=transforms.ToTensor()
-    )
+    transform_test = transforms.Compose([
+        transforms.ToTensor(),
+    ])
+
+    if args.data == 'MNIST':
+        train_dataset = datasets.MNIST(
+            '../data', 
+            train=True, 
+            download=True, 
+            transform=transforms.ToTensor()
+        )
+
+        test_dataset = datasets.MNIST(
+            '../data',
+            train=False,
+            transform=transforms.ToTensor()
+        )
+    elif args.data == 'CIFAR-10':
+        train_dataset = torchvision.datasets.CIFAR10(
+            root='../data', 
+            train=True, 
+            download=True, 
+            transform=transform_train
+        )
+
+        test_dataset = torchvision.datasets.CIFAR10(
+            root='../data',
+            train=False, 
+            download=True, 
+            transform=transform_test
+        )
 
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
@@ -211,15 +248,15 @@ if __name__ == '__main__':
     ).to(device)
     print(vae)
 
-    optimizer = optim.Adam(vae.parameters(), lr=1e-3)
+    optimizer = optim.Adam(vae.parameters(), lr=1e-5)
 
     for epoch in range(1, args.epochs + 1):
         train(epoch, vae, train_loader, optimizer)
         test(epoch, vae, test_loader)
 
-        if epoch % 1 == 0:
+        if epoch % 10 == 0:
             with torch.no_grad():
                 sample = torch.randn(64, args.z_dim).to(device)
                 sample = vae.decode(sample).cpu()
-                save_image(sample.view(64, 1, 28, 28), f'./results/sample_{epoch}.png')
+                save_image(sample.view(64, input_channel, input_size, input_size), f'./results/{args.data}/sample_{epoch}.png')
 
