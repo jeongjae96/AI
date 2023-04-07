@@ -31,18 +31,6 @@ parser.add_argument(
     default=20,
     help='number of epochs to train (default: 20)'
 )
-# parser.add_argument(
-#     '--x_dim',
-#     type=int,
-#     default=784,
-#     help='input dimension (default: 784)'
-# )
-parser.add_argument(
-    '--img_size',
-    type=int,
-    default=28,
-    help='input image size (default: 28)'
-)
 parser.add_argument(
     '--h_dim',
     type=int,
@@ -157,7 +145,7 @@ def test(epoch, model, test_loader):
             loss = loss_function(reconst_batch, data, mu, log_var)
             test_loss += loss.item()
 
-            if batch_idx == 0 and epoch % 10 == 0:
+            if batch_idx == 0 and epoch % 1 == 0:
                 batch_size = data.size(0)
                 n = min(batch_size, 8)
                 comparison = torch.cat([data[:n], reconst_batch.view(batch_size, 1, 28, 28)[:n]])
@@ -186,35 +174,42 @@ if __name__ == '__main__':
     if not os.path.isdir('./results/'):
         os.mkdir('./results/')
 
+    ### dataloader ###
+    train_dataset = datasets.MNIST(
+        '../data', 
+        train=True, 
+        download=True, 
+        transform=transforms.ToTensor()
+    )
+
+    test_dataset = datasets.MNIST(
+        '../data',
+        train=False,
+        transform=transforms.ToTensor()
+    )
+
+    train_loader = torch.utils.data.DataLoader(
+        train_dataset,
+        batch_size=args.batch_size,
+        shuffle=True
+    )
+
+    test_loader = torch.utils.data.DataLoader(
+        test_dataset,
+        batch_size=args.batch_size,
+        shuffle=False
+    )
+
+    input_channel, input_size, _ = train_dataset[0][0].size()
+    x_dim = input_channel * (input_size ** 2)
+
     ### load model ###
     vae = VAE(
-        # args.x_dim,
-        args.img_size ** 2,
+        x_dim,
         args.h_dim,
         args.z_dim
     ).to(device)
     print(vae)
-
-    ### dataloader ###
-    train_loader = torch.utils.data.DataLoader(
-        datasets.MNIST(
-            '../data', 
-            train=True, 
-            download=True, 
-            transform=transforms.ToTensor()
-        ),
-        batch_size=args.batch_size,
-        shuffle=True
-    )
-    test_loader = torch.utils.data.DataLoader(
-        datasets.MNIST(
-            '../data',
-            train=False,
-            transform=transforms.ToTensor()
-        ),
-        batch_size=args.batch_size,
-        shuffle=False
-    )
 
     optimizer = optim.Adam(vae.parameters(), lr=1e-3)
 
@@ -222,7 +217,7 @@ if __name__ == '__main__':
         train(epoch, vae, train_loader, optimizer)
         test(epoch, vae, test_loader)
 
-        if epoch % 10 == 0:
+        if epoch % 1 == 0:
             with torch.no_grad():
                 sample = torch.randn(64, args.z_dim).to(device)
                 sample = vae.decode(sample).cpu()
