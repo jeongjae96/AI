@@ -184,3 +184,4 @@ makepdf.py
 
 assignment1/
 data/
+.DS_Store
